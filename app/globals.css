@@ -1,26 +1,277 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * ÌPAMỌ́ DESIGN TOKENS: palette "carbon-copy receipt book".
+ *
+ * Every Nigerian shop keeps a receipt or invoice book: a white top sheet,
+ * a pink duplicate and a yellow triplicate, with carbon paper between them,
+ * filled in with a blue biro. The app borrows that whole object:
+ *   - PAPER: an off-white page with faint ruled lines on the surfaces where
+ *     you read or write rows (tables, forms). See the `ruled` utility.
+ *   - CARBON: near-black ink for text and primary buttons.
+ *   - ROSE, the duplicate copy: the accent, used sparingly for the focus
+ *     ring, the active nav item and highlights.
+ *   - CANARY, the triplicate copy: a pale yellow tint for secondary
+ *     surfaces: table headers and selected rows.
+ * Dark mode is the carbon paper itself: near-black, with soft paper-white
+ * text and the same rose, lightened to keep its contrast.
+ *
+ * STATUS COLOURS are kept clearly apart from the two brand colours:
+ *   - danger / OUT OF STOCK: a stamp red (hue 0-3°), next to the rose (331°)
+ *     but always solid with white text and a ✕, never a soft pink;
+ *   - warning / LOW STOCK: BIRO BLUE (219°), the pen that fills in the book.
+ *     Yellow or amber would look like the canary copy, and orange is off-limits;
+ *   - success: a ledger green.
+ * Every status also carries an icon and a word ("Low", "Out", "Error:"),
+ * so colour is never the only signal.
+ *
+ * No peach, tangerine, orange, lime, indigo or teal anywhere.
+ *
+ * Each colour is written ONCE as light-dark(light, dark). The browser picks
+ * a side from `color-scheme`, which the theme toggle sets via data-theme,
+ * so components need no `dark:` classes for colour.
+ * `npm run check:contrast` checks every text/UI pair in both modes.
+ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* `--color-*: initial` removes Tailwind's default palette, so an off-brand
+   `bg-orange-500` simply doesn't exist. */
+@theme {
+  --color-*: initial;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Surfaces: the page, raised sheets (cards, tables), sunken wells. */
+  --color-paper: light-dark(#f6f3ea, #121214);
+  --color-raised: light-dark(#fffdf7, #1b1b1f);
+  --color-sunken: light-dark(#ece7da, #0a0a0c);
+  --color-line: light-dark(#d8d1c0, #2d2d34);
+  /* Borders that must be SEEN (inputs, buttons): 3:1 against the surfaces. */
+  --color-line-strong: light-dark(#857d70, #7a7a84);
+  /* The faint ruled lines of a receipt book. Decoration only. */
+  --color-rule: light-dark(#e9e3d4, #212126);
+
+  /* Ink. */
+  --color-ink: light-dark(#18181b, #ece8de);
+  --color-muted: light-dark(#57534b, #aaa69c);
+
+  /* Carbon: primary buttons. In dark mode the button turns paper-white
+     with carbon text, so it still reads as THE button. */
+  --color-carbon: light-dark(#1d1d22, #ece8de);
+  --color-carbon-hover: light-dark(#000000, #ffffff);
+  --color-on-carbon: light-dark(#f6f3ea, #121214);
+
+  /* Rose, the duplicate copy: the accent. */
+  --color-rose: light-dark(#b0286a, #f08fbd);
+  --color-rose-soft: light-dark(#f8dfe9, #3a1b2a);
+
+  /* Canary, the triplicate copy: table headers, selected rows, hovers. */
+  --color-canary: light-dark(#f7efbd, #29261a);
+  --color-canary-strong: light-dark(#ede09a, #3a3520);
+
+  /* Status colours: a strong form (text, icons, solid badges) and a soft
+     background for banners. */
+  --color-danger: light-dark(#b3261e, #ff7373);
+  --color-danger-hover: light-dark(#8f1d17, #ff9a9a);
+  --color-on-danger: light-dark(#ffffff, #1b0606);
+  --color-danger-soft: light-dark(#fbe3df, #3b1513);
+
+  --color-warning: light-dark(#1f4fa6, #94b6ff);
+  --color-on-warning: light-dark(#ffffff, #0b1630);
+  --color-warning-soft: light-dark(#e2eaf8, #16223b);
+
+  --color-success: light-dark(#1c6b39, #7fd49b);
+  --color-on-success: light-dark(#ffffff, #06210f);
+  --color-success-soft: light-dark(#dcefe1, #11281a);
+
+  /* Focus: a rose ring, 3:1 or more against every surface. */
+  --color-focus: light-dark(#b0286a, #f08fbd);
+
+  --color-white: #ffffff;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Typography (variables from next/font in app/layout.tsx).
+     Archivo, narrowed with its width axis, for headings: the condensed,
+     heavy lettering printed at the top of a receipt book ("CASH SALES
+     INVOICE"). Public Sans, plain and very legible, for everything else,
+     including every number: its tabular figures line up in columns.
+     IBM Plex Mono for SKUs only. All checked for ₦, Ì and the stacked
+     marks in "Ìpamọ́" (cmap parsed, and rendered in Chrome). */
+  --font-display: var(--font-archivo), "Arial Narrow", system-ui, sans-serif;
+  --font-sans: var(--font-public-sans), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --radius-control: 0.375rem;
+  --radius-card: 0.625rem;
+  --radius-pill: 999px;
+
+  /* A sheet lying on a desk: a hairline and a soft carbon shadow. */
+  --shadow-card: 0 1px 0 rgb(24 24 27 / 0.06), 0 10px 24px -18px rgb(24 24 27 / 0.45);
+  --shadow-pop: 0 18px 40px -16px rgb(10 10 12 / 0.55);
+
+  --container-form: 34rem;
+  --container-page: 80rem;
+
+  --animate-shimmer: shimmer 1.4s linear infinite;
+  --animate-toast: toast 0.25s ease-out both;
+
+  @keyframes shimmer {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -50% 0;
+    }
+  }
+  @keyframes toast {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/*
+ * THEME SWITCHING. `color-scheme` decides which side of light-dark() wins.
+ * - No attribute (no saved choice, or JavaScript off): follow the OS.
+ * - data-theme="light" | "dark": set before first paint by the inline script
+ *   in app/layout.tsx, so a saved choice never flashes the other theme.
+ */
+:root {
+  color-scheme: light dark;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    overflow-wrap: break-word;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 750;
+    font-stretch: 82%;
+    letter-spacing: -0.005em;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* ONE focus style for keyboard users everywhere: a solid rose ring. */
+  :focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  /* The error summary and headings take focus by script; they get the ring too. */
+  [tabindex="-1"]:focus {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background-color: var(--color-rose-soft);
+    color: var(--color-ink);
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+  a:hover {
+    text-decoration-color: var(--color-rose);
+  }
+
+  ::placeholder {
+    color: var(--color-muted);
+    opacity: 1;
+  }
+
+  dialog::backdrop {
+    background: rgb(10 10 12 / 0.6);
+  }
+
+  /* Number inputs: no spinner arrows (we have our own − / + buttons). */
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+/* Inputs: a visible border, and a thick rose edge when focused.
+   aria-invalid fields get a red border; the message under the field
+   says what is wrong in words. */
+@utility field {
+  background-color: var(--color-raised);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-control);
+  color: var(--color-ink);
+  &[aria-invalid="true"] {
+    border-color: var(--color-danger);
+    border-width: 2px;
+  }
+  &:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 0;
+    border-color: var(--color-focus);
+  }
+}
+
+/* RULED PAPER: faint horizontal lines every 2rem, like a receipt book page,
+   plus the book's rose margin line down the left. Used on forms and on
+   empty states; tables get their own ruled rows. */
+@utility ruled {
+  background-color: var(--color-raised);
+  background-image:
+    linear-gradient(to right, transparent 1.25rem, var(--color-rose-soft) 1.25rem, var(--color-rose-soft) calc(1.25rem + 2px), transparent calc(1.25rem + 2px)),
+    repeating-linear-gradient(to bottom, transparent 0, transparent calc(2rem - 1px), var(--color-rule) calc(2rem - 1px), var(--color-rule) 2rem);
+}
+
+/* The perforated tear-off edge at the top of a receipt sheet. */
+@utility perforated {
+  background-image: radial-gradient(circle at 50% 0, var(--color-paper) 3px, transparent 3.5px);
+  background-size: 12px 6px;
+  background-repeat: repeat-x;
+  background-position: top left;
+}
+
+/* Skeleton shimmer for loading states. */
+@utility skeleton {
+  background-image: linear-gradient(90deg, var(--color-sunken) 0%, var(--color-line) 50%, var(--color-sunken) 100%);
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+  border-radius: var(--radius-control);
+}
+
+/*
+ * REDUCED MOTION: people who ask their OS for less motion get none.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

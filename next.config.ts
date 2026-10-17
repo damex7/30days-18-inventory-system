@@ -8,6 +8,19 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
 
+  // There is no public home page: the app starts at the dashboard (and the
+  // proxy sends anyone without a session cookie on to /login).
+  async redirects() {
+    return [{ source: '/', destination: '/dashboard', permanent: false }]
+  },
+
+  // CSV import posts the file's text to a Server Action, which accepts 1 MB
+  // by default. The import itself refuses files over 1 MB (lib/inventory/csv.ts);
+  // the extra room is for the form's other fields and encoding overhead.
+  experimental: {
+    serverActions: { bodySizeLimit: '2mb' },
+  },
+
   // SECURITY HEADERS, sent with every response.
   async headers() {
     return [

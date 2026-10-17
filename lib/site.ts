@@ -1,6 +1,8 @@
 export const site = {
-  name: 'Kọ́kọ́rọ́',
-  tagline: 'accounts, sessions and keys, built by hand',
+  name: 'Ìpamọ́',
+  tagline: 'stock kept safe',
   description:
-    'Kọ́kọ́rọ́ ("key" in Yoruba) is a hand-built authentication system: sign-up, email verification, database sessions, password reset, rate limiting and an admin area, with no auth library.',
+    'Ìpamọ́ ("keeping safe" in Yoruba) is a stock manager for a small shop: products, suppliers, two locations, and a ledger of every stock movement, by whom and when.',
+  /** The seed business. Shown in the header and in WhatsApp order messages. */
+  shopName: 'Mama Ngozi Provisions, Wuse 2, Abuja',
 }
