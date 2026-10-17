@@ -29,7 +29,7 @@ export function SortHeader({
 }) {
   const nextDir = active && dir === 'asc' ? 'descending' : 'ascending'
   return (
-    <th scope="col" aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : undefined} className={cn('px-3 py-2.5 font-semibold whitespace-nowrap', align === 'right' && 'text-right', className)}>
+    <th scope="col" aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : undefined} className={cn('px-3 py-2.5 font-semibold', align === 'right' ? 'text-right' : 'whitespace-nowrap', className)}>
       <Link href={href} scroll={false} className={cn('inline-flex items-center gap-1 rounded-control no-underline hover:underline', align === 'right' && 'flex-row-reverse')}>
         {label}
         <Icon name={active ? (dir === 'asc' ? 'sortAsc' : 'sortDesc') : 'sortNone'} className={cn('size-4', active ? 'text-rose' : 'text-muted')} />
