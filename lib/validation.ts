@@ -47,9 +47,6 @@ const existingPassword = z
 /** A raw token from an email link: 32 random bytes as base64url = 43 characters. */
 export const tokenSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/)
 
-export const signUpSchema = z.object({ name, email, password: newPassword })
-export type SignUpInput = z.infer<typeof signUpSchema>
-
 export const loginSchema = z.object({ email, password: existingPassword })
 export type LoginInput = z.infer<typeof loginSchema>
 
@@ -70,17 +67,22 @@ export const changePasswordSchema = z.object({
 })
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
 
-export const deleteAccountSchema = z.object({ password: existingPassword })
-
 /** Session ids are SHA-256 hashes in hex (see db/migrations/002). */
 export const sessionIdSchema = z.object({ sessionId: z.string().regex(/^[0-9a-f]{64}$/) })
 
 export const userIdSchema = z.object({ userId: z.uuid() })
 
-export const roleSchema = z.enum(['user', 'admin'])
+// Day 18: 'staff' replaces Day 17's 'user' (db/migrations/006_staff_roles.sql).
+export const roleSchema = z.enum(['staff', 'admin'])
 export type Role = z.infer<typeof roleSchema>
 
 export const changeRoleSchema = z.object({ userId: z.uuid(), role: roleSchema })
+
+/** An admin creating an account. No password field: the app generates a temporary one. */
+export const createStaffSchema = z.object({ name, email, role: roleSchema })
+export type CreateStaffInput = z.infer<typeof createStaffSchema>
+
+export const setActiveSchema = z.object({ userId: z.uuid(), active: z.enum(['true', 'false']).transform((v) => v === 'true') })
 
 /** /admin?q=…&page=… : bad values fall back to defaults instead of erroring. */
 export const adminSearchSchema = z.object({

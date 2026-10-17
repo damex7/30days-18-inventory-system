@@ -8,7 +8,6 @@
 import 'server-only'
 
 import { z } from 'zod'
-import { AUTH_EVENT_TYPES } from '@/lib/auth/event-types'
 import { roleSchema } from '@/lib/validation'
 
 /** Parses rows at the boundary; a mismatch names the query that caused it. */
@@ -27,6 +26,10 @@ export const UserSchema = z.object({
   name: z.string(),
   role: roleSchema,
   emailVerifiedAt: z.date().nullable(),
+  /** Day 18: true until someone given a temporary password chooses their own. */
+  mustChangePassword: z.boolean(),
+  /** Day 18: set when an admin deactivates the account (it can then no longer sign in). */
+  deactivatedAt: z.date().nullable(),
   createdAt: z.date(),
 })
 export type User = z.infer<typeof UserSchema>
@@ -46,17 +49,6 @@ export const SessionSchema = z.object({
   location: z.string().nullable(),
 })
 export type Session = z.infer<typeof SessionSchema>
-
-export const AuthEventSchema = z.object({
-  id: z.string(),
-  type: z.enum(AUTH_EVENT_TYPES),
-  ip: z.string().nullable(),
-  userAgent: z.string().nullable(),
-  metadata: z.record(z.string(), z.unknown()),
-  createdAt: z.date(),
-  actorName: z.string().nullable(),
-})
-export type AuthEvent = z.infer<typeof AuthEventSchema>
 
 export const AdminUserSchema = UserSchema.extend({
   lastLoginAt: z.date().nullable(),

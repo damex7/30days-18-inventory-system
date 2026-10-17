@@ -49,13 +49,26 @@ async function loginUrl(): Promise<string> {
   return query ? `/login?${query}` : '/login'
 }
 
+/** The one page (and its action) a user with a temporary password may use. */
+export const CHANGE_PASSWORD_PATH = '/account/password'
+
 /**
  * Returns the signed-in user and session, or REDIRECTS to /login.
  * redirect() throws, so code after this line only runs for a signed-in user.
+ *
+ * Day 18: an account an admin created still has the TEMPORARY password the
+ * admin saw. Until its owner picks their own, every page and action sends
+ * them to /account/password. Server Actions are POSTed to the page that
+ * shows the form, so the path proxy.ts records is that page's path, and the
+ * change-password action itself is allowed through.
  */
 export async function verifySession(): Promise<SessionWithUser> {
   const current = await getCurrentSession()
   if (!current) redirect(await loginUrl())
+  if (current.user.mustChangePassword) {
+    const path = (await headers()).get('x-ipamo-path') ?? ''
+    if (path.split('?')[0] !== CHANGE_PASSWORD_PATH) redirect(`${CHANGE_PASSWORD_PATH}?required=1`)
+  }
   return current
 }
 
@@ -67,8 +80,9 @@ export async function requireVerified(): Promise<SessionWithUser> {
 }
 
 /**
- * Requires a role. Admin pages and actions need BOTH the admin role and a
- * verified email: an admin account that hasn't proved it owns its inbox
+ * Requires a role. 'staff' means any signed-in, active account (admins
+ * can do everything staff can). Admin pages and actions need BOTH the
+ * admin role and a verified email: an admin account that hasn't proved it owns its inbox
  * could belong to someone who typed a colleague's address at sign-up.
  * The role is read fresh from the database on every request (it's part of
  * readSession's JOIN), so a demotion takes effect immediately.
@@ -80,4 +94,18 @@ export async function requireRole(role: Role): Promise<SessionWithUser> {
     if (!current.user.emailVerifiedAt) redirect('/dashboard?denied=verify')
   }
   return current
+}
+
+/**
+ * For ROUTE HANDLERS (the CSV exports). A redirect is the wrong answer to a
+ * file download or a script, so this returns an HTTP status instead:
+ * 401 when signed out, 403 when the role is wrong or the temporary password
+ * hasn't been changed yet.
+ */
+export async function authorizeRequest(role: Role): Promise<{ ok: true; current: SessionWithUser } | { ok: false; status: 401 | 403 }> {
+  const current = await getCurrentSession()
+  if (!current) return { ok: false, status: 401 }
+  if (current.user.mustChangePassword) return { ok: false, status: 403 }
+  if (role === 'admin' && (current.user.role !== 'admin' || !current.user.emailVerifiedAt)) return { ok: false, status: 403 }
+  return { ok: true, current }
 }

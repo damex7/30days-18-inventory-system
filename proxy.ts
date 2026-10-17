@@ -19,7 +19,9 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { SESSION_COOKIE, sessionCookieOptions } from '@/lib/auth/cookie'
 
-const PROTECTED_PREFIXES = ['/dashboard', '/account', '/admin']
+// Every area of the app is for signed-in staff (Day 18 adds the inventory
+// areas to Day 17's list).
+const PROTECTED_PREFIXES = ['/dashboard', '/products', '/movements', '/categories', '/suppliers', '/locations', '/reports', '/admin', '/account']
 
 function isProtected(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))

@@ -20,7 +20,8 @@ import { hashToken } from '@/lib/auth/tokens'
 
 const userColumns = () => sql`
   u.id, u.email::text AS email, u.name, u.role,
-  u.email_verified_at AS "emailVerifiedAt", u.created_at AS "createdAt"`
+  u.email_verified_at AS "emailVerifiedAt", u.must_change_password AS "mustChangePassword",
+  u.deactivated_at AS "deactivatedAt", u.created_at AS "createdAt"`
 
 // ---------------------------------------------------------------------------
 // Reading
@@ -43,29 +44,46 @@ export async function findUserByEmail(email: string): Promise<User | null> {
   return parseRows(UserSchema, rows, 'findUserByEmail')[0] ?? null
 }
 
+/** Everyone who has made a stock movement or could: for the ledger's "user" filter. */
+export async function listUserOptions(): Promise<{ id: string; name: string; active: boolean }[]> {
+  const rows = await sql`SELECT id, name, deactivated_at IS NULL AS active FROM users ORDER BY name`
+  return rows.map((row) => ({ id: String(row.id), name: String(row.name), active: Boolean(row.active) }))
+}
+
 // ---------------------------------------------------------------------------
-// Signing up and verifying
+// Creating accounts (admins only) and verifying
 // ---------------------------------------------------------------------------
 
 /**
- * Creates an account and logs "signed_up", in ONE statement. Returns the
- * new id, or null if the email is already taken.
+ * SIGN-UP IS CLOSED (Day 18). A shop's stock records shouldn't be open to
+ * anyone who has an email address, so only an admin creates accounts.
  *
- * ON CONFLICT DO NOTHING makes the UNIQUE index the judge: two sign-ups for
- * the same address at the same moment can't both succeed, and the loser
- * gets null rather than an error. (Checking "does it exist?" first and then
- * inserting would leave a gap between the two where both could pass.)
+ * Creates the account with a temporary password (already hashed) and
+ * must_change_password = true, and logs "user_created" with the admin as
+ * actor, in ONE statement. Returns the new id, or null if the email is taken.
+ *
+ * ON CONFLICT DO NOTHING makes the UNIQUE index the judge: two admins
+ * adding the same address at the same moment can't both succeed.
+ *
+ * Unlike Day 17's public sign-up, saying "that email already has an account"
+ * is fine here: only an admin sees it, and admins can see every user anyway.
  */
-export async function createUser(input: { name: string; email: string; passwordHash: string }, request: RequestInfo): Promise<string | null> {
+export async function createStaffUser(
+  actorId: string,
+  input: { name: string; email: string; role: Role; passwordHash: string },
+  request: RequestInfo,
+): Promise<string | null> {
   const rows = await sql`
     WITH created AS (
-      INSERT INTO users (name, email, password_hash)
-      VALUES (${input.name}, ${input.email}, ${input.passwordHash})
+      INSERT INTO users (name, email, password_hash, role, must_change_password)
+      VALUES (${input.name}, ${input.email}, ${input.passwordHash}, ${input.role}, true)
       ON CONFLICT (email) DO NOTHING
       RETURNING id
     )
-    INSERT INTO auth_events (user_id, type, ip, user_agent)
-    SELECT id, 'signed_up', ${request.ip}, ${request.userAgent} FROM created
+    INSERT INTO auth_events (user_id, actor_id, type, ip, user_agent, metadata)
+    SELECT id, ${actorId}, 'user_created', ${request.ip}, ${request.userAgent},
+           jsonb_build_object('role', ${input.role}::text)
+    FROM created
     RETURNING user_id AS "userId"`
   const id = rows[0]?.userId
   return typeof id === 'string' ? id : null
@@ -122,9 +140,13 @@ export async function resetPasswordWithToken(token: string, passwordHash: string
       RETURNING user_id
     ),
     updated AS (
+      -- Day 18: a deactivated account can't be brought back with a reset
+      -- link, and a password the person chose themselves ends the
+      -- "temporary password" state.
       UPDATE users SET password_hash = ${passwordHash},
-                       email_verified_at = COALESCE(email_verified_at, now())
-      WHERE id = (SELECT user_id FROM consumed)
+                       email_verified_at = COALESCE(email_verified_at, now()),
+                       must_change_password = false
+      WHERE id = (SELECT user_id FROM consumed) AND deactivated_at IS NULL
       RETURNING id
     ),
     signed_out AS (
@@ -146,7 +168,8 @@ export async function resetPasswordWithToken(token: string, passwordHash: string
  */
 export async function changePassword(userId: string, passwordHash: string, keepSessionId: string, request: RequestInfo): Promise<void> {
   await sqlTransaction((tx) => [
-    tx`UPDATE users SET password_hash = ${passwordHash} WHERE id = ${userId}`,
+    // Choosing a password also ends the temporary-password state (Day 18).
+    tx`UPDATE users SET password_hash = ${passwordHash}, must_change_password = false WHERE id = ${userId}`,
     deleteOtherSessionsQuery(tx, userId, keepSessionId),
     // Any reset link still sitting in an inbox stops working too.
     tx`UPDATE email_tokens SET used_at = now()
@@ -161,26 +184,16 @@ export async function updatePasswordHash(userId: string, passwordHash: string): 
 }
 
 // ---------------------------------------------------------------------------
-// Profile and deletion
+// Profile
 // ---------------------------------------------------------------------------
+
+// Day 17's deleteUser is gone: accounts are deactivated, never deleted,
+// because stock movements must keep saying who made them.
 
 export async function updateName(userId: string, name: string, request: RequestInfo): Promise<void> {
   await sqlTransaction((tx) => [
     tx`UPDATE users SET name = ${name} WHERE id = ${userId}`,
     eventQuery(tx, { type: 'profile_updated', userId, request }),
-  ])
-}
-
-/**
- * Deletes the account. ON DELETE CASCADE removes its sessions and email
- * tokens; its audit events stay, with user_id set to NULL (anonymised).
- * The event is written first, in the same transaction, so it exists for
- * the moment between, then loses its link to the user with everything else.
- */
-export async function deleteUser(userId: string, request: RequestInfo): Promise<void> {
-  await sqlTransaction((tx) => [
-    eventQuery(tx, { type: 'account_deleted', userId, request }),
-    tx`DELETE FROM users WHERE id = ${userId}`,
   ])
 }
 
@@ -196,7 +209,7 @@ function likePattern(text: string): string {
 }
 
 /**
- * One page of users for /admin, newest first, with an optional search on
+ * One page of users for /admin/users, newest first, with an optional search on
  * email or name.
  *
  * - "Last login" is the newest logged_in event per user: an index scan on
@@ -244,6 +257,41 @@ export async function setRole(actorId: string, userId: string, role: Role, reque
     INSERT INTO auth_events (user_id, actor_id, type, ip, user_agent, metadata)
     SELECT id, ${actorId}, 'role_changed', ${request.ip}, ${request.userAgent},
            jsonb_build_object('from', from_role, 'to', ${role}::text)
+    FROM changed
+    RETURNING id`
+  return rows.length > 0
+}
+
+/**
+ * Deactivates or reactivates an account, in ONE statement (a single
+ * statement is always all-or-nothing, so its three writes are one
+ * transaction):
+ * - `changed` flips deactivated_at, but only for SOMEONE ELSE (`id <> actorId`:
+ *   an admin can never lock themselves out) and only if it isn't already in
+ *   that state;
+ * - `signed_out` deletes every session of a deactivated user, so they are
+ *   signed out on their very next request (readSession also ignores
+ *   deactivated users, as a second guard);
+ * - the INSERT logs who did it.
+ * Returns false if nothing changed.
+ */
+export async function setActive(actorId: string, userId: string, active: boolean, request: RequestInfo): Promise<boolean> {
+  const rows = await sql`
+    WITH changed AS (
+      UPDATE users SET deactivated_at = CASE WHEN ${active}::boolean THEN NULL ELSE now() END
+      WHERE id = ${userId} AND id <> ${actorId}
+        AND (deactivated_at IS NULL) <> ${active}::boolean
+      RETURNING id
+    ),
+    signed_out AS (
+      DELETE FROM sessions
+      WHERE NOT ${active}::boolean AND user_id IN (SELECT id FROM changed)
+      RETURNING 1
+    )
+    INSERT INTO auth_events (user_id, actor_id, type, ip, user_agent, metadata)
+    SELECT id, ${actorId}, CASE WHEN ${active}::boolean THEN 'user_reactivated' ELSE 'user_deactivated' END,
+           ${request.ip}, ${request.userAgent},
+           jsonb_build_object('sessionsEnded', (SELECT count(*) FROM signed_out))
     FROM changed
     RETURNING id`
   return rows.length > 0

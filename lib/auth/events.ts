@@ -1,9 +1,10 @@
-// THE AUDIT LOG: writes and reads auth_events (db/migrations/004).
+// THE AUDIT LOG: writes auth_events (db/migrations/004 and 006). Day 18 has
+// no /account/activity page, so nothing here reads it back; the rows stay
+// for the owner to review in the database.
 import 'server-only'
 
 import type { NeonQueryFunctionInTransaction, NeonQueryInTransaction } from '@neondatabase/serverless'
-import { sql, sqlTransaction } from '@/lib/db'
-import { AuthEventSchema, parseRows, type AuthEvent } from '@/lib/rows'
+import { sqlTransaction } from '@/lib/db'
 import type { AuthEventType } from './event-types'
 import type { RequestInfo } from './request'
 
@@ -34,14 +35,3 @@ export async function recordEvent(event: NewAuthEvent): Promise<void> {
   await sqlTransaction((tx) => [eventQuery(tx, event)])
 }
 
-/** One user's newest events, for /account/activity. An index range scan on auth_events_user_created_idx. */
-export async function listEventsForUser(userId: string, limit = 50): Promise<AuthEvent[]> {
-  const rows = await sql`
-    SELECT e.id::text AS id, e.type, e.ip, e.user_agent AS "userAgent", e.metadata,
-           e.created_at AS "createdAt", a.name AS "actorName"
-    FROM auth_events e LEFT JOIN users a ON a.id = e.actor_id
-    WHERE e.user_id = ${userId}
-    ORDER BY e.created_at DESC
-    LIMIT ${limit}`
-  return parseRows(AuthEventSchema, rows, 'listEventsForUser')
-}

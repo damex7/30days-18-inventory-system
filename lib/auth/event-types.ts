@@ -1,6 +1,6 @@
 // The kinds of audit event, matching the CHECK constraint in
-// db/migrations/004_auth_events.sql, with the label each one gets on
-// /account/activity. Plain data, so client and server code can both use it.
+// db/migrations/006_staff_roles.sql (which extended 004's list), with a
+// readable label for each. Plain data, so client and server code can both use it.
 
 export const AUTH_EVENT_TYPES = [
   'signed_up',
@@ -15,6 +15,9 @@ export const AUTH_EVENT_TYPES = [
   'role_changed',
   'profile_updated',
   'account_deleted',
+  'user_created',
+  'user_deactivated',
+  'user_reactivated',
 ] as const
 export type AuthEventType = (typeof AUTH_EVENT_TYPES)[number]
 
@@ -31,7 +34,8 @@ export const EVENT_LABELS: Record<AuthEventType, string> = {
   role_changed: 'Role changed',
   profile_updated: 'Profile updated',
   account_deleted: 'Account deleted',
+  user_created: 'Account created by an admin',
+  user_deactivated: 'Account deactivated',
+  user_reactivated: 'Account reactivated',
 }
 
-/** Events worth drawing attention to on the activity page. */
-export const WARNING_EVENTS: ReadonlySet<AuthEventType> = new Set(['login_failed', 'password_reset', 'role_changed'])

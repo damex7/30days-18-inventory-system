@@ -18,12 +18,11 @@ import 'server-only'
 import { createHash } from 'node:crypto'
 import { sql } from '@/lib/db'
 
-export type RateLimitAction = 'login' | 'signup' | 'forgot' | 'resend'
+export type RateLimitAction = 'login' | 'forgot' | 'resend'
 
 /** How long each window lasts, and how many attempts fit in it per IP / per email (or user). */
 export const RATE_LIMITS: Record<RateLimitAction, { windowSeconds: number; perIp: number; perAccount: number }> = {
   login: { windowSeconds: 15 * 60, perIp: 20, perAccount: 5 },
-  signup: { windowSeconds: 60 * 60, perIp: 5, perAccount: 3 },
   forgot: { windowSeconds: 60 * 60, perIp: 10, perAccount: 3 },
   resend: { windowSeconds: 60 * 60, perIp: 10, perAccount: 3 },
 }

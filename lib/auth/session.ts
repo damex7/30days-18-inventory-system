@@ -97,6 +97,7 @@ const SessionUserRowSchema = SessionSchema.extend({
   name: z.string(),
   role: UserSchema.shape.role,
   emailVerifiedAt: z.date().nullable(),
+  mustChangePassword: z.boolean(),
   userCreatedAt: z.date(),
 })
 
@@ -115,6 +116,9 @@ const SessionUserRowSchema = SessionSchema.extend({
  *    so most requests write nothing. This runs at most once per request,
  *    because verifySession() (lib/auth/dal.ts) is memoised per request.
  * 3. The SELECT joins the user, so the caller gets both in one go.
+ *    Day 18: the join only matches ACTIVE users. A deactivated user's
+ *    sessions are deleted when they're deactivated, and this condition
+ *    makes sure a session can never work for them anyway.
  *
  * All three see the database as it was when the statement started, so the
  * SELECT reads the OLD expires_at; COALESCE picks the new one from
@@ -150,18 +154,18 @@ export async function readSession(): Promise<SessionWithUser | null> {
            COALESCE(t.last_seen_at, s.last_seen_at) AS "lastSeenAt",
            s.user_agent AS "userAgent", s.ip, s.location,
            u.email::text AS email, u.name, u.role, u.email_verified_at AS "emailVerifiedAt",
-           u.created_at AS "userCreatedAt"
+           u.must_change_password AS "mustChangePassword", u.created_at AS "userCreatedAt"
     FROM sessions s
-    JOIN users u ON u.id = s.user_id
+    JOIN users u ON u.id = s.user_id AND u.deactivated_at IS NULL
     LEFT JOIN touched t ON true
     WHERE s.id = ${id} AND s.expires_at > now()`
 
   const row = parseRows(SessionUserRowSchema, rows, 'readSession')[0]
   if (!row) return null
-  const { email, name, role, emailVerifiedAt, userCreatedAt, ...session } = row
+  const { email, name, role, emailVerifiedAt, mustChangePassword, userCreatedAt, ...session } = row
   return {
     session,
-    user: { id: session.userId, email, name, role, emailVerifiedAt, createdAt: userCreatedAt },
+    user: { id: session.userId, email, name, role, emailVerifiedAt, mustChangePassword, deactivatedAt: null, createdAt: userCreatedAt },
   }
 }
 
