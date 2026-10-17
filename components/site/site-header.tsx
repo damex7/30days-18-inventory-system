@@ -63,7 +63,10 @@ async function AccountControls() {
         <Icon name="user" />
         <span className="truncate max-md:hidden">{current.user.name}</span>
       </Link>
-      <SignOutButton />
+      {/* On a phone, Sign out lives on the account page to keep the header on one line. */}
+      <div className="max-sm:hidden">
+        <SignOutButton />
+      </div>
     </>
   )
 }

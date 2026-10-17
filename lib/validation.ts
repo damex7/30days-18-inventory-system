@@ -104,6 +104,8 @@ export type FormState<Field extends string = string> = {
   fieldErrors?: Partial<Record<Field, string[]>>
   values?: Partial<Record<Field, string>>
   submissionId?: number
+  /** Day 18: a delete refused because of history; the dialog offers "Archive instead". */
+  offerArchive?: boolean
 }
 
 export const initialFormState: FormState = { status: 'idle' }

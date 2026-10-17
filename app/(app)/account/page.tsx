@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Suspense, type ReactNode } from 'react'
 import { ProfileForm } from '@/components/account/account-forms'
 import { PageSkeleton } from '@/components/site/page-skeleton'
+import { SignOutButton } from '@/components/site/sign-out-button'
 import { button } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
 import { verifySession } from '@/lib/auth/dal'
@@ -58,6 +59,7 @@ async function Account() {
             <Icon name="laptop" />
             Signed-in devices
           </Link>
+          <SignOutButton withLabel />
         </div>
       </Section>
     </div>

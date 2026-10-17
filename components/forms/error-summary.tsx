@@ -33,7 +33,7 @@ export function ErrorSummary({ state, labels }: { state: FormState; labels: Reco
       ref={ref}
       tabIndex={-1}
       aria-labelledby="error-summary-title"
-      className="mb-6 rounded-control border-2 border-danger bg-danger-soft p-4 motion-safe:animate-rise"
+      className="mb-6 rounded-control border-2 border-danger bg-danger-soft p-4 motion-safe:animate-toast"
     >
       <h2 id="error-summary-title" className="flex items-center gap-2 font-sans text-base font-bold text-danger">
         <Icon name="errorCircle" />

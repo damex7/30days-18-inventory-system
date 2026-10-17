@@ -7,13 +7,19 @@ import { Icon } from '@/components/ui/icon'
  * <img src="/logout">, and browsers that prefetch links could sign you out
  * by accident. A plain HTML form: it works before JavaScript has loaded.
  */
-export function SignOutButton() {
+export function SignOutButton({ withLabel = false }: { withLabel?: boolean }) {
   return (
     <form method="post" action="/logout">
       <button type="submit" className={`${button.secondary} px-3`}>
         <Icon name="logout" />
-        <span className="hidden sm:inline">Sign out</span>
-        <span className="sr-only sm:hidden">Sign out</span>
+        {withLabel ? (
+          <span>Sign out</span>
+        ) : (
+          <>
+            <span className="hidden sm:inline">Sign out</span>
+            <span className="sr-only sm:hidden">Sign out</span>
+          </>
+        )}
       </button>
     </form>
   )

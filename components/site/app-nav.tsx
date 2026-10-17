@@ -13,14 +13,13 @@ const STAFF_LINKS: NavLink[] = [
   { href: '/products', label: 'Products', icon: 'box' },
   { href: '/movements', label: 'Movements', icon: 'receipt' },
   { href: '/reports/low-stock', label: 'Low stock', icon: 'report' },
+  // Staff can SEE the catalogue (and call a supplier); only admins change it.
+  { href: '/suppliers', label: 'Suppliers', icon: 'truck' },
+  { href: '/categories', label: 'Categories', icon: 'tag' },
+  { href: '/locations', label: 'Locations', icon: 'store' },
 ]
 
-const ADMIN_LINKS: NavLink[] = [
-  { href: '/categories', label: 'Categories', icon: 'tag' },
-  { href: '/suppliers', label: 'Suppliers', icon: 'truck' },
-  { href: '/locations', label: 'Locations', icon: 'store' },
-  { href: '/admin/users', label: 'Users', icon: 'users' },
-]
+const ADMIN_LINKS: NavLink[] = [{ href: '/admin/users', label: 'Users', icon: 'users' }]
 
 /** "/products/12/edit" is inside Products; "/movements/new" is the Record button's, not Movements'. */
 function isActive(pathname: string, href: string): boolean {
@@ -30,7 +29,7 @@ function isActive(pathname: string, href: string): boolean {
 
 /**
  * The strip of tabs under the header. On a phone it scrolls sideways
- * (one row, no hidden menu to open). The admin tabs only show for admins,
+ * (one row, no hidden menu to open). The Users tab only shows for admins,
  * but that's just tidiness: each of those pages and actions checks the
  * role on the server (requireRole), so typing the URL gets staff nowhere.
  */

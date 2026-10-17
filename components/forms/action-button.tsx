@@ -36,7 +36,7 @@ export function ActionButton({
       <SubmitButton variant={variant} pendingLabel={pendingLabel}>
         {children}
       </SubmitButton>
-      <p role="status" className={cn('text-sm font-semibold', state.status === 'error' ? 'text-danger' : 'text-success')}>
+      <p role="status" className={cn('text-sm font-semibold empty:sr-only', state.status === 'error' ? 'text-danger' : 'text-success')}>
         {state.status !== 'idle' ? state.message : null}
       </p>
     </form>
