@@ -9,6 +9,7 @@ import { Icon } from '@/components/ui/icon'
 import { PageHeader } from '@/components/ui/page-header'
 import { StockBadge } from '@/components/ui/stock-badge'
 import { Pagination, SortHeader, TableFrame } from '@/components/ui/table-parts'
+import { plural } from '@/lib/action-helpers'
 import { verifySession } from '@/lib/auth/dal'
 import { cn } from '@/lib/cn'
 import { categoryOptions } from '@/lib/inventory/categories'
@@ -23,7 +24,7 @@ import { hrefWith } from '@/lib/url'
 
 export const metadata: Metadata = { title: 'Products' }
 
-const NOTICES: Record<string, string> = { deleted: 'Product deleted.', imported: 'Products imported.' }
+const NOTICES: Record<string, string> = { deleted: 'Product deleted.' }
 const DEFAULTS = { status: 'all', sort: 'name', dir: 'asc', page: 1 }
 const SORT_LABELS: Record<string, string> = {
   name: 'name',
@@ -57,7 +58,10 @@ async function Products({ searchParams }: Pick<PageProps<'/products'>, 'searchPa
   // Everything comes from the URL, checked by Zod. A mangled value falls
   // back to its default instead of breaking the page.
   const params = productListSchema.parse(raw)
-  const notice = NOTICES[typeof raw.notice === 'string' ? raw.notice : ''] ?? null
+  const notice =
+    raw.notice === 'imported'
+      ? `Imported ${plural(Number(raw.count) || 0, 'product')}${Number(raw.skipped) ? ` (${Number(raw.skipped)} rows skipped)` : ''}. Record receipts to give them stock.`
+      : (NOTICES[typeof raw.notice === 'string' ? raw.notice : ''] ?? null)
 
   const [{ products, total }, locations, categories, suppliers] = await Promise.all([listProducts(params), locationOptions(), categoryOptions(), supplierOptions()])
   const base = current(params)

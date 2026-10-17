@@ -87,6 +87,23 @@ export function ConfirmAction({
         aria-describedby={bodyId}
         // Return focus to the button that opened the dialog, however it closed.
         onClose={() => triggerRef.current?.focus()}
+        // showModal() makes the page behind inert, but Tab can still leave
+        // for the browser's own toolbar. Wrap it, so Tab from the last
+        // control goes to the first (and Shift+Tab the other way).
+        onKeyDown={(event) => {
+          if (event.key !== 'Tab') return
+          const focusable = [...event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([type=hidden]), textarea, select')]
+          const firstEl = focusable[0]
+          const lastEl = focusable.at(-1)
+          if (!firstEl || !lastEl) return
+          if (event.shiftKey && document.activeElement === firstEl) {
+            event.preventDefault()
+            lastEl.focus()
+          } else if (!event.shiftKey && document.activeElement === lastEl) {
+            event.preventDefault()
+            firstEl.focus()
+          }
+        }}
         className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-card border border-line bg-raised p-0 text-ink shadow-pop backdrop:backdrop-blur-[1px]"
       >
         <div className={cn('h-1.5', danger ? 'bg-danger' : 'bg-carbon')} aria-hidden />
