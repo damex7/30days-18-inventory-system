@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { PageSkeleton } from '@/components/site/page-skeleton'
+import { TableSkeleton } from '@/components/site/page-skeleton'
 import { button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Flash } from '@/components/ui/flash'
@@ -40,7 +40,7 @@ const SORT_LABELS: Record<string, string> = {
 
 export default function ProductsPage({ searchParams }: PageProps<'/products'>) {
   return (
-    <Suspense fallback={<PageSkeleton />}>
+    <Suspense fallback={<TableSkeleton />}>
       <Products searchParams={searchParams} />
     </Suspense>
   )

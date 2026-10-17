@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { MovementList } from '@/components/inventory/movement-list'
-import { PageSkeleton } from '@/components/site/page-skeleton'
+import { TableSkeleton } from '@/components/site/page-skeleton'
 import { button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Icon } from '@/components/ui/icon'
@@ -21,7 +21,7 @@ export const metadata: Metadata = { title: 'Movements' }
 
 export default function MovementsPage({ searchParams }: PageProps<'/movements'>) {
   return (
-    <Suspense fallback={<PageSkeleton />}>
+    <Suspense fallback={<TableSkeleton />}>
       <Movements searchParams={searchParams} />
     </Suspense>
   )
